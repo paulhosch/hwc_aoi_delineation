@@ -7,9 +7,8 @@ Workflow to delineate the catchment for a Pourpoint defined as the cell with the
 ![admin_bound](https://github.com/user-attachments/assets/a6c703f9-5098-4b32-90f9-4da04ae7187e)
 
 ## 2 Process FathomDEM
-
-![original_dem](https://github.com/user-attachments/assets/04aea21b-44d2-424f-95cd-af644a7ef978)
-![original_dem_clipped](https://github.com/user-attachments/assets/7b36af9a-d270-42b9-a0da-a94c0001b81c)
+![original_dem](https://github.com/user-attachments/assets/b5fc6011-adc2-41d0-8afa-fbea4a8ff2b2)
+![original_dem_clipped](https://github.com/user-attachments/assets/61109905-9d5c-494a-b331-5339fda33031)
 
 ## 3 Query Water from Open StreetMap and rasterize
 
@@ -17,14 +16,13 @@ Workflow to delineate the catchment for a Pourpoint defined as the cell with the
 ![water_raster_clipped](https://github.com/user-attachments/assets/598e572a-71eb-4626-8e40-3d997f76abfd)
 
 ## 4 Stream Burn and Condition DEM
+![conditioned_dem](https://github.com/user-attachments/assets/7367b178-5ab0-451e-8798-77acad62a085)
+![conditioned_dem_clipped](https://github.com/user-attachments/assets/d0c373b8-ee2f-4578-8dbd-3a79387f8d78)
 
-![conditioned_dem](https://github.com/user-attachments/assets/1a131bb2-2c2c-435e-89e6-745342c3302a)
-![conditioned_dem_clipped](https://github.com/user-attachments/assets/6ccf3fd6-fb76-4a0e-92a8-de8d2b236391)
 
 ## 5 Compute Flow Direction
-
-![flow_direction](https://github.com/user-attachments/assets/acc89af2-9bfc-4c67-9c2f-e514d3f5dfdb)
-![flow_direction_clipped](https://github.com/user-attachments/assets/94164457-87ef-4180-b117-3fb8be6c21f5)
+![flow_direction](https://github.com/user-attachments/assets/fb39d59c-f16c-4aae-92aa-671c6857ed98)
+![flow_direction_clipped](https://github.com/user-attachments/assets/7c0a78a8-e17c-443c-90a2-4b7501ef5ea0)
 
 ## 6 Compute Flow Accumulation
 
