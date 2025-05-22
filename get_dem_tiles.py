@@ -1,5 +1,3 @@
-# in this code I want to check which dem_tiles are needed to be downloaded and put into the data/dem_tiles folder
-# the download should be performed manually but this script should tell the user what files to download
 
 #%% Import libraries
 import os

@@ -1,26 +1,23 @@
 # Leverkusen AOI Delineation
 
-A geospatial toolkit for delineating areas of interest (AOI) for hydrological analysis.
+Workflow to delineate the catchment for a Pourpoint defined as the cell with the highest flow accumulation within a queried administrative boundary.
 
-## Setup
+## 1 Query Admin Bounds from OpenstreetMap and buffer bbox
 
-1. Clone this repository
-2. Run the setup script to create a virtual environment and register it as an IPython kernel:
+//picture
 
-```bash
-python setup_env.py
-```
+## 2 Process FathomDEM
 
-3. Launch Jupyter Notebook or JupyterLab
-4. Open the Python scripts and select the `lev_aoi_env` kernel
+## 3 Query Water from Open StreetMap and rasterize
 
-## Workflow
+## 4 Stream Burn and Condition DEM
 
-1. Run `get_admin_bound.py` to download administrative boundaries
-2. Run `get_dem_tiles.py` to determine required DEM tiles
-3. Download the required DEM tiles and place them in `data/dem_tiles/`
-4. Run `compute_flow_dir.py` to calculate flow direction
+## 5 Compute FLow Direction
 
-## Dependencies
+## 6 Compute Flow accumulation
 
-All dependencies are specified in `requirements.txt` and will be installed by the setup script.
+## 7 Comoute Stream Network
+
+## 8 Determine Pour Point as highest Accumulation Cell
+
+## 9 Delineate Catchment

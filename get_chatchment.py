@@ -175,7 +175,7 @@ def get_osm_water(dem_path):
 
 # Set up directories
 dem_tiles_dir = Path("data/dem_tiles")
-admin_bounds_dir = Path("data/admin_bounds")
+admin_bounds_dir = Path("data/admin_bound")
 
 output_dir = Path("data/rasters")
 plot_dir = Path("data/plots")
@@ -721,8 +721,8 @@ print(f"Flow accumulation points saved to {point_file}")
 #%% Compute Catchment
 print(f"Computing catchment from pour point {x}, {y}")
 
-grid = Grid.from_raster(str(merged_dem_path))
-dem = grid.read_raster(str(merged_dem_path))
+grid = Grid.from_raster(str(conditioned_dem_file))
+dem = grid.read_raster(str(conditioned_dem_file))
 
 pit_filled_dem = grid.fill_pits(dem)
 pits = grid.detect_pits(pit_filled_dem)
@@ -824,9 +824,16 @@ point = ax.scatter(x, y, transform=ccrs.PlateCarree(), color='blue', s=300, mark
           zorder=4, edgecolor='black', label='Pour Point')
 
 ax.set_extent(dem.extent)
-# Create legend
+# Create legend elements
+admin_color = '#C44E51'
+buffered_color = '#8C8C8C'
 catchment_patch = mpatches.Patch(color=catchment_color, label='Catchment', alpha=0.7)
-ax.legend(handles=[catchment_patch, point], loc='lower left', facecolor='none', edgecolor='none')
+admin_patch = plt.scatter([], [], c=admin_color, marker='s', s=200, label='Admin Boundary', edgecolor='none')
+#buffered_patch = plt.scatter([], [], c=buffered_color, marker='s', s=200, label='Buffered Bounding Box', edgecolor='none')
+
+# Combine all legend elements
+legend_elements = [catchment_patch, point, admin_patch]
+ax.legend(handles=legend_elements, loc='lower left', edgecolor='none', facecolor='white')
 
 plt.title(f'Catchment (catchment area: {catchment_area_cells} cells, {catchment_area_km2:.2f} km²) with Admin Boundary (red)')
 
@@ -842,8 +849,8 @@ catchment_clipped, clipped_extent = clip_raster(catchment_file, admin_bound_proj
 
 # Use imshow instead of contour for binary data
 # Plot the catchment with proper parameters
-im = ax.imshow(np.where(catchment_clipped == 1, 1, np.nan), 
-               extent=clipped_extent,
+im = ax.imshow(np.where(catchment == 1, 1, np.nan), 
+               extent=grid.extent,
                zorder=3, 
                cmap=catchment_cmap,  # Use cmap instead of color
                alpha=0.7, 
@@ -855,10 +862,16 @@ point = ax.scatter(x, y, transform=ccrs.PlateCarree(), color='blue', s=300, mark
 
 ax.set_extent(clipped_extent)
 
-# Create legend
+# Create legend elements
+admin_color = '#C44E51'
+buffered_color = '#8C8C8C'
 catchment_patch = mpatches.Patch(color=catchment_color, label='Catchment', alpha=0.7)
-ax.legend(handles=[catchment_patch, point], loc='lower left', facecolor='none', edgecolor='none')
+admin_patch = plt.scatter([], [], c=admin_color, marker='s', s=200, label='Admin Boundary', edgecolor='none')
+#buffered_patch = plt.scatter([], [], c=buffered_color, marker='s', s=200, label='Buffered Bounding Box', edgecolor='none')
 
+# Combine all legend elements
+legend_elements = [catchment_patch, point, admin_patch]
+ax.legend(handles=legend_elements, loc='lower left', edgecolor='none', facecolor='white')
 plt.title(f'Catchment within Admin Boundary (red)')
 
 plt.tight_layout()
