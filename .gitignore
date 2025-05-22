@@ -42,4 +42,5 @@ temp_merged.tif
 # Ignore large data files (optional)
 # Uncomment the line below if you want to exclude large data files
 # data/dem_tiles/
-# data/rasters/ 
+# data/rasters/ data/
+data.zip
