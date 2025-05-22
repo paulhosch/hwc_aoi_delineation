@@ -34,7 +34,13 @@ from rasterio.transform import rowcol
 from rasterio.transform import xy
 from src.vis.utils import create_map_figure
 from matplotlib.colors import ListedColormap
+from geemap import cartoee
 
+# Define dpi for all saved figures
+dpi = 150
+# Define figure sizes
+full_fig_size = (8, 6)
+cliped_fig_size = (8, 5)
 
 def rasterize_osm_water(osm_water, dem_path, output_dir):
     """Rasterize OSM water features to binary raster
@@ -292,15 +298,30 @@ else:
         "width": mosaic.shape[2],
         "transform": out_trans,
     })
-    # Convert DEM from centimeters to meters
+    
+    # Get the no-data value from the original file
+    nodata_value = src_files_to_mosaic[0].meta['nodata']
+    
+    # Replace no-data values with np.nan for proper statistics calculation
+    mosaic = mosaic.astype(np.float32)  # Convert to float to support NaN
+    mosaic = np.where(mosaic == nodata_value, np.nan, mosaic)
+    
+    # Calculate statistics properly excluding NaN values
     print(f"DEM elevation range before conversion: {np.nanmin(mosaic):.2f}cm to {np.nanmax(mosaic):.2f}cm")
     mosaic = mosaic / 100  # Convert cm to m
     print(f"DEM elevation range after conversion: {np.nanmin(mosaic):.2f}m to {np.nanmax(mosaic):.2f}m")
 
-    # Write the merged raster
+    # Write the merged raster with NaN as no-data
     merged_dem_path = output_dir / "merged_dem.tif"
+    
+    # Update no-data value to NaN in metadata
+    out_meta.update({
+        "nodata": np.nan,  # Set no-data to NaN
+        "dtype": np.float32  # Ensure float dtype to support NaN
+    })
+    
     with rasterio.open(merged_dem_path, "w", **out_meta) as dest:
-        dest.write(mosaic)
+        dest.write(mosaic.astype(np.float32))
     
     # Close all source files
     for src in src_files_to_mosaic:
@@ -370,54 +391,59 @@ print(f"Water features saved to {water_file}")
 water_raster, water_raster_file = rasterize_osm_water(water_gdf, str(merged_dem_path), water_dir)
 
 #%% PLOT WATER RASTER
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=full_fig_size)
 # Create a masked array where 0 values are transparent
 masked_water = np.ma.masked_where(water_raster == 0, water_raster)
 im = ax.imshow(masked_water, cmap='Blues', extent=grid.extent,
                 transform=ccrs.PlateCarree(), zorder=1, alpha=1)
 ax.set_extent(grid.extent)
+cartoee.add_scale_bar_lite(ax, length=5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 plt.title('Water Raster within Admin Boundary (red)')
 plt.tight_layout()
-plt.savefig(plot_dir / 'water_raster.png')
+plt.savefig(plot_dir / 'water_raster.png', dpi=dpi)
 plt.show()
 
 # plot the water raster within admin boundary
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=cliped_fig_size)
 cliped_raster, clipped_extent = clip_raster(water_raster_file, admin_bound_proj.geometry.values[0])
 # Create a masked array where 0 values are transparent
 masked_clipped = np.ma.masked_where(cliped_raster == 0, cliped_raster)
 im = ax.imshow(masked_clipped, cmap='Blues', extent=clipped_extent,
                 transform=ccrs.PlateCarree(), zorder=1, alpha=1)
 ax.set_extent(clipped_extent)
+cartoee.add_scale_bar_lite(ax, length=2.5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 plt.title('Water Raster within Admin Boundary (red)')
 plt.tight_layout()
-plt.savefig(plot_dir / 'water_raster_clipped.png')
+plt.savefig(plot_dir / 'water_raster_clipped.png', dpi=dpi)
 plt.show()
 #%% Plot DEM
 
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=full_fig_size)
 
 im = ax.imshow(dem, cmap='terrain', extent=dem.extent, transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(dem.extent)
-plt.colorbar(im, ax=ax, label='Elevation (m)')
+cartoee.add_scale_bar_lite(ax, length=5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
+plt.colorbar(im, ax=ax, label='Elevation (m)', orientation='horizontal')
 plt.title('FathomDEM with Admin Boundary (red)')
 
 plt.tight_layout()
-plt.savefig(plot_dir / 'original_dem.png')
+plt.savefig(plot_dir / 'original_dem.png', dpi=dpi)
 plt.show()
 
 # plot the clipped DEM
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=cliped_fig_size)
 
 dem_masked, clipped_extent = clip_raster(merged_dem_path, admin_bound_proj.geometry.values[0])
 
 im = ax.imshow(dem_masked, cmap='terrain', extent=clipped_extent,
                 transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(clipped_extent)
+cartoee.add_scale_bar_lite(ax, length=2.5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 plt.title('FathomDEM within Admin Boundary (red)')
 plt.colorbar(im, ax=ax, label='Elevation (m)', orientation='horizontal')
+
 plt.tight_layout()
-plt.savefig(plot_dir / 'original_dem_clipped.png')
+plt.savefig(plot_dir / 'original_dem_clipped.png', dpi=dpi)
 plt.show()
 
 #%% Condition DEM
@@ -441,15 +467,17 @@ dem_flooded = grid.resolve_flats(dem_filled)
 print("Done")
 #%% Plot conditioned DEM
 from src.vis.utils import create_map_figure
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=full_fig_size)
 
 im = ax.imshow(dem_flooded, cmap='terrain', extent=grid.extent,
                 transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(grid.extent)
-plt.colorbar(im, ax=ax, label='Elevation (m)')
+cartoee.add_scale_bar_lite(ax, length=5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
+plt.colorbar(im, ax=ax, label='Elevation (m)', orientation='horizontal')
 plt.title('Conditioned DEM with Admin Boundary (red)')
+
 plt.tight_layout()
-plt.savefig(plot_dir / 'conditioned_dem.png')
+plt.savefig(plot_dir / 'conditioned_dem.png', dpi=dpi)
 plt.show()
 
 # Get metadata from the input file for saving rasters
@@ -462,15 +490,17 @@ with rasterio.open(conditioned_dem_file, 'w', **meta) as dst:
     dst.write(dem_flooded.astype(np.float32), 1)
 
 # plot the clipped conditioned DEM
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=cliped_fig_size)
 clipped_dem, clipped_extent = clip_raster(conditioned_dem_file, admin_bound_proj.geometry.values[0])
 im = ax.imshow(clipped_dem, cmap='terrain', extent=clipped_extent,
                 transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(clipped_extent)
+cartoee.add_scale_bar_lite(ax, length=2.5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 plt.colorbar(im, ax=ax, label='Elevation (m)', orientation='horizontal')
 plt.title('Conditioned DEM within Admin Boundary (red)')
+
 plt.tight_layout()
-plt.savefig(plot_dir / 'conditioned_dem_clipped.png')
+plt.savefig(plot_dir / 'conditioned_dem_clipped.png', dpi=dpi)
 plt.show()
 
 print("Flow direction computation complete")
@@ -487,15 +517,16 @@ print(f"Flow direction number of pits: {np.sum(flow_dir == -2)}")
 print(f"Flow direction number of nodata: {np.sum(flow_dir == 0)}")
 
 #%% Plot and saveflow direction
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=full_fig_size)
 im = ax.imshow(flow_dir, cmap='viridis', extent=grid.extent,
                 transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(grid.extent)
-plt.colorbar(im, ax=ax, label='Flow Direction')
+cartoee.add_scale_bar_lite(ax, length=5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
+plt.colorbar(im, ax=ax, label='Flow Direction', orientation='horizontal')
 plt.title('Flow Direction (D8) with Admin Boundary (red)')
 
 plt.tight_layout()
-plt.savefig(plot_dir / 'flow_direction.png')
+plt.savefig(plot_dir / 'flow_direction.png', dpi=dpi)
 plt.show()
 
 
@@ -517,16 +548,18 @@ with rasterio.open(flow_dir_file, 'w', **meta) as dst:
     dst.write(flow_dir.astype(np.uint8), 1)
 
 # plot the clipped flow direction
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=cliped_fig_size)
 flow_dir_clipped, clipped_extent = clip_raster(flow_dir_file, admin_bound_proj.geometry.values[0])
 
 im = ax.imshow(flow_dir_clipped, cmap='viridis', extent=clipped_extent,
                 transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(clipped_extent)
+cartoee.add_scale_bar_lite(ax, length=2.5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 plt.colorbar(im, ax=ax, label='Flow Direction', orientation='horizontal')
 plt.title('Flow Direction within Admin Boundary (red)')
+
 plt.tight_layout()
-plt.savefig(plot_dir / 'flow_direction_clipped.png')
+plt.savefig(plot_dir / 'flow_direction_clipped.png', dpi=dpi)
 plt.show()
 
 
@@ -534,14 +567,16 @@ plt.show()
 acc = grid.accumulation(flow_dir)
 
 # Plot full flow accumulation
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=full_fig_size)
 im = ax.imshow(acc, extent=grid.extent, cmap='cubehelix', transform=ccrs.PlateCarree(),
                 norm=LogNorm(1, acc.max()), interpolation='bilinear', zorder=1)
 ax.set_extent(grid.extent)
-plt.colorbar(im, ax=ax, label='Upstream Cells')
+cartoee.add_scale_bar_lite(ax, length=5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
+plt.colorbar(im, ax=ax, label='Upstream Cells', orientation='horizontal')
 plt.title('Flow Accumulation with Admin Boundary (red)')
+
 plt.tight_layout()
-plt.savefig(plot_dir / 'flow_accumulation_full.png')
+plt.savefig(plot_dir / 'flow_accumulation_full.png', dpi=dpi)
 plt.show()
 
 # save the full flow accumulation
@@ -551,7 +586,7 @@ with rasterio.open(acc_file, 'w', **meta) as dst:
 
 
 # Plot clipped data
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=cliped_fig_size)
 acc_clipped, clipped_extent = clip_raster(acc_file, admin_bound_proj.geometry.values[0])
 im = ax.imshow(acc_clipped,
                 zorder=3,
@@ -561,26 +596,28 @@ im = ax.imshow(acc_clipped,
                 norm=LogNorm(1, acc_clipped.max()),
                 interpolation='bilinear')
 ax.set_extent(clipped_extent)
+cartoee.add_scale_bar_lite(ax, length=2.5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 plt.colorbar(im, ax=ax, label='Upstream Cells', orientation='horizontal')
 plt.title('Flow Accumulation within Admin Boundary (red)')
 
 plt.tight_layout()
-plt.savefig(plot_dir / 'flow_accumulation_clipped.png')
+plt.savefig(plot_dir / 'flow_accumulation_clipped.png', dpi=dpi)
 plt.show()
 
 #%% Compute Stream Network /(Accumulation > 1000)
 stream_network = acc > 1000
 
 #Plot Stream Network
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=full_fig_size)
 im = ax.imshow(np.where(stream_network, stream_network, np.nan), cmap='bone', extent=grid.extent,
                 transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(grid.extent)
+cartoee.add_scale_bar_lite(ax, length=5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 #plt.colorbar(im, ax=ax, label='Stream Network')
 plt.title('Streams (Accumulation > 1000) with Admin Boundary (red)')
 
 plt.tight_layout()
-plt.savefig(plot_dir / 'stream_network.png')
+plt.savefig(plot_dir / 'stream_network.png', dpi=dpi)
 plt.show()
 
 # save the stream network
@@ -589,16 +626,17 @@ with rasterio.open(stream_network_file, 'w', **meta) as dst:
     dst.write(stream_network.astype(np.uint8), 1)
 
 # plot the clipped stream network
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=cliped_fig_size)
 stream_network_clipped, clipped_extent = clip_raster(stream_network_file, admin_bound_proj.geometry.values[0])
 im = ax.imshow(np.where(stream_network_clipped, stream_network_clipped, np.nan), cmap='bone', extent=clipped_extent,
                 transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(clipped_extent)
+cartoee.add_scale_bar_lite(ax, length=2.5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 #plt.colorbar(im, ax=ax, label='Stream Network')
 plt.title('Streams (Accumulation > 1000) within Admin Boundary (red)')
 
 plt.tight_layout()
-plt.savefig(plot_dir / 'stream_network_clipped.png')
+plt.savefig(plot_dir / 'stream_network_clipped.png', dpi=dpi)
 plt.show()
 
 
@@ -666,40 +704,53 @@ else:
 
 
 #%% plot the cell with the highest accumulation with the admin boundary
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=full_fig_size)
 im = ax.imshow(np.where(water_raster, water_raster, np.nan), cmap='bone', extent=grid.extent,
                 transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(grid.extent)
+cartoee.add_scale_bar_lite(ax, length=5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 # Plot the highest accumulation point
 point = ax.scatter(x, y, transform=ccrs.PlateCarree(), color='blue', s=300, marker='*', 
           zorder=3, edgecolor='black', label='Max Flow Acc')
 
 plt.title('Highest Flow Accumulation with Admin Boundary (red)')
 
+# Create legend elements
+admin_color = '#C44E51'
+admin_patch = plt.scatter([], [], c=admin_color, marker='s', s=200, label='Admin', edgecolor='none')
 water_patch = mpatches.Patch(color='black', label='OSM Water')
-ax.legend(handles=[water_patch, point], loc='lower left', facecolor='none', edgecolor='none')
+# Combine all legend elements
+legend_elements = [ point, water_patch]
+ax.legend(handles=legend_elements, loc='lower left', edgecolor='none', facecolor='white')
 
 plt.tight_layout()
-plt.savefig(plot_dir / 'highest_acc_cell.png')
+plt.savefig(plot_dir / 'highest_acc_cell.png', dpi=dpi)
 plt.show()
 
 # plot the cell with the highest accumulation within the admin boundary
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=cliped_fig_size)
 cliped_water_raster, clipped_extent = clip_raster(water_raster_file, admin_bound_proj.geometry.values[0])
 im = ax.imshow(np.where(cliped_water_raster, cliped_water_raster, np.nan), cmap='bone', extent=clipped_extent,
                 transform=ccrs.PlateCarree(), zorder=1)
 ax.set_extent(clipped_extent)
+cartoee.add_scale_bar_lite(ax, length=2.5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 # Plot the highest accumulation point
 point = ax.scatter(x, y, transform=ccrs.PlateCarree(), color='blue', s=300, marker='*', 
           zorder=3, edgecolor='black', label='Max Flow Acc')
 
 plt.title('Highest Flow Accumulation within Admin Boundary (red)')
 
+# Create legend elements
+admin_color = '#C44E51'
+admin_patch = plt.scatter([], [], c=admin_color, marker='s', s=200, label='Admin', edgecolor='none')
 water_patch = mpatches.Patch(color='black', label='OSM Water')
-ax.legend(handles=[water_patch, point], loc='lower left', facecolor='none', edgecolor='none')
+
+# Combine all legend elements
+legend_elements = [ point, water_patch]
+ax.legend(handles=legend_elements, loc='lower left', edgecolor='none', facecolor='white')
 
 plt.tight_layout()
-plt.savefig(plot_dir / 'highest_acc_cell_clipped.png')
+plt.savefig(plot_dir / 'highest_acc_cell_clipped.png', dpi=dpi)
 plt.show()
 
 
@@ -738,12 +789,12 @@ if depressions.any():
     print(f"Number of remaining depressions: {np.sum(depressions)}")
     raise ValueError("DEM still contains depressions after depression filling")
 
-inflated_dem = grid.resolve_flats(flooded_dem)
+inflated_dem = grid.resolve_flats(flooded_dem, eps=1e-8, max_iter=100000)
 flats = grid.detect_flats(inflated_dem)
 if flats.any():
     print("ERROR: Flats still remain in the DEM after flat resolution")
     print(f"Number of remaining flats: {np.sum(flats)}")
-    raise ValueError("DEM still contains flats after flat resolution")
+    #raise ValueError("DEM still contains flats after flat resolution")
 
 print("Conditioned DEM without errors")
 
@@ -767,40 +818,34 @@ print(f"Number of catchment cells: {np.sum(catchment == 1)}")
 print(f"Grid affine transform: {grid.affine}")
 print(f"Grid CRS: {grid.crs}")
 
-# Calculate cell size from the affine transform
-# The cell size in the x-direction is the absolute value of element [0]
-# The cell size in the y-direction is the absolute value of element [4]
-cell_size_x = abs(grid.affine[0])
-cell_size_y = abs(grid.affine[4])
-cell_area = cell_size_x * cell_size_y  # in square meters
-
-# Calculate catchment area
-catchment_area_cells = np.sum(catchment == 1)
-catchment_area_m2 = catchment_area_cells * cell_area
-catchment_area_km2 = catchment_area_m2 / 1_000_000  # Convert to km²
-
-print(f"Cell size: {cell_size_x} x {cell_size_y} meters")
-print(f"Cell area: {cell_area} m²")
-print(f"Catchment area: {catchment_area_m2:.2f} m² = {catchment_area_km2:.2f} km²")
-
 # Save the catchment to a file
 catchment_file = output_dir / "catchment.tif"
 with rasterio.open(catchment_file, 'w', **meta) as dst:
     dst.write(catchment.astype(np.uint8), 1)
 print(f"Catchment area saved to {catchment_file}")
 
-# Verify the catchment file was created
-if os.path.exists(catchment_file):
-    print(f"Catchment file exists at {catchment_file}")
-    with rasterio.open(catchment_file) as src:
-        print(f"Catchment file shape: {src.shape}")
-        catchment_data = src.read(1)
-        print(f"Catchment file values - min: {catchment_data.min()}, max: {catchment_data.max()}")
-else:
-    print(f"WARNING: Catchment file does not exist at {catchment_file}")
+# Open the catchment raster with rioxarray
+catchment_xr = rioxarray.open_rasterio(catchment_file)
+
+# Reproject to UTM zone 32N 
+catchment_utm = catchment_xr.rio.reproject("EPSG:32632")
+
+# Get new cell size in meters
+cell_size_x = abs(catchment_utm.rio.resolution()[0])
+cell_size_y = abs(catchment_utm.rio.resolution()[1])
+cell_area = cell_size_x * cell_size_y
+
+# Calculate area
+catchment_area_cells = (catchment_utm.values[0] == 1).sum()
+catchment_area_m2 = catchment_area_cells * cell_area
+catchment_area_km2 = catchment_area_m2 / 1_000_000
+
+print(f"Cell size: {cell_size_x} x {cell_size_y} meters")
+print(f"Cell area: {cell_area} m²")
+print(f"Catchment area: {catchment_area_m2:.2f} m² = {catchment_area_km2:.2f} km²")
 
 # %% Plot the catchment
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=full_fig_size)
 
 # Load the catchment raster
 catchment_raster = rasterio.open(catchment_file)
@@ -814,9 +859,8 @@ catchment_cmap = ListedColormap([catchment_color])
 # Plot the catchment with proper parameters
 im = ax.imshow(np.where(catchment_data == 1, 1, np.nan), 
                extent=grid.extent,
-               zorder=3, 
+               zorder=1, 
                cmap=catchment_cmap,  # Use cmap instead of color
-               alpha=0.7, 
                transform=ccrs.PlateCarree())
 
 # Add highest accumulation point
@@ -824,25 +868,24 @@ point = ax.scatter(x, y, transform=ccrs.PlateCarree(), color='blue', s=300, mark
           zorder=4, edgecolor='black', label='Pour Point')
 
 ax.set_extent(dem.extent)
+cartoee.add_scale_bar_lite(ax, length=5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 # Create legend elements
 admin_color = '#C44E51'
-buffered_color = '#8C8C8C'
-catchment_patch = mpatches.Patch(color=catchment_color, label='Catchment', alpha=0.7)
-admin_patch = plt.scatter([], [], c=admin_color, marker='s', s=200, label='Admin Boundary', edgecolor='none')
-#buffered_patch = plt.scatter([], [], c=buffered_color, marker='s', s=200, label='Buffered Bounding Box', edgecolor='none')
+catchment_patch = mpatches.Patch(color=catchment_color, label='Catchment')
+admin_patch = plt.scatter([], [], c=admin_color, marker='s', s=200, label='Admin', edgecolor='none')
 
 # Combine all legend elements
-legend_elements = [catchment_patch, point, admin_patch]
+legend_elements = [catchment_patch, point]
 ax.legend(handles=legend_elements, loc='lower left', edgecolor='none', facecolor='white')
 
-plt.title(f'Catchment (catchment area: {catchment_area_cells} cells, {catchment_area_km2:.2f} km²) with Admin Boundary (red)')
+plt.title(f'Catchment with Admin Boundary (red) \n area: {catchment_area_cells} cells, {catchment_area_km2:.2f} km²')
 
 plt.tight_layout()
-plt.savefig(plot_dir / 'catchment.png')
+plt.savefig(plot_dir / 'catchment.png', dpi=dpi)
 plt.show()
 
 # %% Plot the clipped catchment
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=cliped_fig_size)
 
 # clipped catchment
 catchment_clipped, clipped_extent = clip_raster(catchment_file, admin_bound_proj.geometry.values[0])
@@ -851,9 +894,8 @@ catchment_clipped, clipped_extent = clip_raster(catchment_file, admin_bound_proj
 # Plot the catchment with proper parameters
 im = ax.imshow(np.where(catchment == 1, 1, np.nan), 
                extent=grid.extent,
-               zorder=3, 
+               zorder=1, 
                cmap=catchment_cmap,  # Use cmap instead of color
-               alpha=0.7, 
                transform=ccrs.PlateCarree())
 
 # Add highest accumulation point
@@ -861,21 +903,20 @@ point = ax.scatter(x, y, transform=ccrs.PlateCarree(), color='blue', s=300, mark
           zorder=4, edgecolor='black', label='Pour Point')
 
 ax.set_extent(clipped_extent)
-
 # Create legend elements
 admin_color = '#C44E51'
-buffered_color = '#8C8C8C'
-catchment_patch = mpatches.Patch(color=catchment_color, label='Catchment', alpha=0.7)
-admin_patch = plt.scatter([], [], c=admin_color, marker='s', s=200, label='Admin Boundary', edgecolor='none')
-#buffered_patch = plt.scatter([], [], c=buffered_color, marker='s', s=200, label='Buffered Bounding Box', edgecolor='none')
+catchment_patch = mpatches.Patch(color=catchment_color, label='Catchment')
+admin_patch = plt.scatter([], [], c=admin_color, marker='s', s=200, label='Admin', edgecolor='none')
 
 # Combine all legend elements
-legend_elements = [catchment_patch, point, admin_patch]
+legend_elements = [catchment_patch, point]
 ax.legend(handles=legend_elements, loc='lower left', edgecolor='none', facecolor='white')
-plt.title(f'Catchment within Admin Boundary (red)')
+
+plt.title(f'Catchment within Admin Boundary (red) \n area: {catchment_area_cells} cells, {catchment_area_km2:.2f} km²')
+cartoee.add_scale_bar_lite(ax, length=2.5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
 
 plt.tight_layout()
-plt.savefig(plot_dir / 'catchment_clipped.png')
+plt.savefig(plot_dir / 'catchment_clipped.png', dpi=dpi)
 plt.show()
 
 

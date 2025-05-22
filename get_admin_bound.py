@@ -91,9 +91,15 @@ print(f"Saved buffered bounding box to {buffered_file}")
 
 # read the saved shapefile
 
-fig, ax = create_map_figure()
+fig, ax = create_map_figure(figsize=(8, 6))
 
 ax.set_extent([buffered_min_x, buffered_max_x, buffered_min_y, buffered_max_y])
-plt.title(f"Admin Boundary and Buffered Bounding Box: {city}, {country}")
+plt.title(f"Admin {city} within buffered bbox")
+from geemap import cartoee
+cartoee.add_scale_bar_lite(ax, length=5, xy=(0.9, 0.05), fontsize=10, color="black", unit="km")
+plot_dir = Path("data/plots")
+plt.tight_layout()
+
+plt.savefig(plot_dir / 'admin_bound.png', dpi=300)
 plt.show()
 # %%
