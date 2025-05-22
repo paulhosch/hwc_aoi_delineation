@@ -1,0 +1,45 @@
+# Ignore data directory
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Mac OS
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Cache
+cache/
+temp_merged.tif
+
+# Ignore large data files (optional)
+# Uncomment the line below if you want to exclude large data files
+# data/dem_tiles/
+# data/rasters/ 
