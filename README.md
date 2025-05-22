@@ -3,45 +3,48 @@
 Workflow to delineate the catchment for a Pourpoint defined as the cell with the highest flow accumulation within a queried administrative boundary.
 
 ## 1 Query Admin Bounds from OpenstreetMap and buffer bbox
-![admin_bound](https://github.com/user-attachments/assets/e99e7c86-a622-416e-9732-046e8dbce7ad)
-
+![admin_bound](https://github.com/user-attachments/assets/a6c703f9-5098-4b32-90f9-4da04ae7187e)
 
 ## 2 Process FathomDEM
-![original_dem](https://github.com/user-attachments/assets/eb2646c5-b599-4039-b4b7-76d6fce31155)
-![original_dem_clipped](https://github.com/user-attachments/assets/8cd04363-9882-4215-a6ea-ad211558c071)
-
+![original_dem](https://github.com/user-attachments/assets/04aea21b-44d2-424f-95cd-af644a7ef978)
+![original_dem_clipped](https://github.com/user-attachments/assets/7b36af9a-d270-42b9-a0da-a94c0001b81c)
 
 ## 3 Query Water from Open StreetMap and rasterize
-![water_raster](https://github.com/user-attachments/assets/73d0fab3-bc7d-4093-850e-a1f009cee9da)
-![water_raster_clipped](https://github.com/user-attachments/assets/2c85de74-9276-4c60-81ff-ebedfe2ed22e)
-
+![water_raster](https://github.com/user-attachments/assets/56b06a15-dada-4ceb-9dbe-8079d69776df)
+![water_raster_clipped](https://github.com/user-attachments/assets/598e572a-71eb-4626-8e40-3d997f76abfd)
 
 ## 4 Stream Burn and Condition DEM
-![conditioned_dem](https://github.com/user-attachments/assets/26d680b7-fb74-4d1c-993a-43167a743d00)
-![conditioned_dem_clipped](https://github.com/user-attachments/assets/76f23fe9-d2b0-44e7-a8bf-b5bae70588ce)
-
+![conditioned_dem](https://github.com/user-attachments/assets/1a131bb2-2c2c-435e-89e6-745342c3302a)
+![conditioned_dem_clipped](https://github.com/user-attachments/assets/6ccf3fd6-fb76-4a0e-92a8-de8d2b236391)
 
 ## 5 Compute Flow Direction
-![flow_direction](https://github.com/user-attachments/assets/1599d1c3-d29c-4b2a-a17e-596ae32583fe)
-![flow_direction_clipped](https://github.com/user-attachments/assets/725de937-39f2-45c1-86a4-e97f791b5348)
-
+![flow_direction](https://github.com/user-attachments/assets/acc89af2-9bfc-4c67-9c2f-e514d3f5dfdb)
+![flow_direction_clipped](https://github.com/user-attachments/assets/94164457-87ef-4180-b117-3fb8be6c21f5)
 
 ## 6 Compute Flow Accumulation
-![flow_accumulation_full](https://github.com/user-attachments/assets/93f1aa3d-4273-43b9-9196-04a74a987eb8)
-![flow_accumulation_clipped](https://github.com/user-attachments/assets/c180dfa5-a5ac-4b0e-9264-78e625a2df3e)
-
+![flow_accumulation_full](https://github.com/user-attachments/assets/0c75d27f-81fc-4c6d-b392-663809e5088e)
+![flow_accumulation_clipped](https://github.com/user-attachments/assets/7c991435-715a-4023-9c89-a32fa460fabd)
 
 ## 7 Compute Stream Network
-![stream_network](https://github.com/user-attachments/assets/74b309df-022a-4cdd-ac7d-3bc9e85060ee)
-![stream_network_clipped](https://github.com/user-attachments/assets/4707d8b1-e0b9-4db5-8408-2137d72d9f60)
-
+![stream_network](https://github.com/user-attachments/assets/0992d026-29c7-4587-a4f1-df7d9d2b66c4)
+![stream_network_clipped](https://github.com/user-attachments/assets/1c033132-bf4e-4447-a3e5-7971687dd228)
 
 ## 8 Determine Pour Point as Highest Accumulation Cell
-![highest_acc_cell](https://github.com/user-attachments/assets/f45c0d6a-e988-455b-8915-c113d51e8251)
-![highest_acc_cell_clipped](https://github.com/user-attachments/assets/de5f84ce-876a-4ea2-9828-5f8e7832ed8b)
-
+![highest_acc_cell](https://github.com/user-attachments/assets/a3a87a08-2aff-4c72-be76-b997c127c801)
+![highest_acc_cell_clipped](https://github.com/user-attachments/assets/ff2b5dab-f5dd-4f5d-bb9f-c36611b2bf20)
 
 ## 9 Delineate Catchment
-![catchment](https://github.com/user-attachments/assets/43dc3f09-2a7b-4c73-aa8c-e3339401c754)
-![catchment_clipped](https://github.com/user-attachments/assets/883d89f3-9ab3-4efd-883f-24aed1a728a0)
+![catchment](https://github.com/user-attachments/assets/fbaff545-658c-42ce-aab8-868901019cea)
+![catchment_clipped](https://github.com/user-attachments/assets/e61f8193-afc7-4c2a-a3f1-363921c214aa)
+
+## Data Sources
+
+- **FathomDEM**: Global terrain map [Zenodo API]
+
+  - Source: Uhe, P., Lucas, C., Hawker, L., et al. (2025). FathomDEM: an improved global terrain map using a hybrid vision transformer model. Environmental Research Letters, 20(3).
+  - Resolution: 30m
+
+- **OpenStreetMap**: Water features [OSM API]
+  - Source: © OpenStreetMap contributors
+  - Features:Rivers, lakes, and other water bodies
 
